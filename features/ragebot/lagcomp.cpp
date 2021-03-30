@@ -202,18 +202,9 @@ void c_animations::update_players(){
 	}
 }
 
-float animation::calculate_lerp(){
-	static auto cl_interp = interfaces::m_cvar_system->find_var(FNV1A("cl_interp"));
-	static auto cl_updaterate = interfaces::m_cvar_system->find_var(FNV1A("cl_updaterate"));
-	const auto update_rate = cl_updaterate->get_int();
-	const auto interp_ratio = cl_interp->get_float();
-
-	auto lerp = interp_ratio / update_rate;
-
-	if (lerp <= interp_ratio)
-		lerp = interp_ratio;
-
-	return lerp;
+float animation::get_client_interp_amount() {
+	return std::max(interfaces::m_cvar_system->find_var(FNV1A("cl_interp"))->get_float(),
+		interfaces::m_cvar_system->find_var(FNV1A("cl_interp_ratio"))->get_float() / interfaces::m_cvar_system->find_var(FNV1A("cl_updaterate"))->get_float());
 }
 
 bool animation::is_valid(float m_sim_time, bool m_valid, float range/*, float max_unlag = .2f*/){
@@ -223,7 +214,7 @@ bool animation::is_valid(float m_sim_time, bool m_valid, float range/*, float ma
 	static auto sv_maxunlag = interfaces::m_cvar_system->find_var(FNV1A("sv_maxunlag"));
 
 	const auto correct = std::clamp(interfaces::m_client_state->m_net_channel->get_latency(FLOW_INCOMING) + interfaces::m_client_state->m_net_channel->get_latency(FLOW_OUTGOING)
-		+ calculate_lerp(), 0.f, sv_maxunlag->get_float());
+		+ globals::hvh::m_lerp, 0.f, sv_maxunlag->get_float());
 
 	return fabsf(correct - (interfaces::m_global_vars->m_cur_time - m_sim_time)) < range && correct < 1.f;
 }

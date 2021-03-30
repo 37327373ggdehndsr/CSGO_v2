@@ -62,6 +62,22 @@ bool c_base_combat_weapon::is_gun() {
 	}
 }
 
+bool c_base_combat_weapon::is_gun() {
+	switch (get_cs_weapon_data()->m_weapon_type)
+	{
+	case WEAPON_TYPE_C4:
+		return false;
+	case WEAPON_TYPE_GRENADE:
+		return false;
+	case WEAPON_TYPE_KNIFE:
+		return false;
+	case WEAPON_TYPE_UNKNOWN:
+		return false;
+	default:
+		return true;
+	}
+}
+
 bool c_cs_player::is_local_player() {
 	return get_index() == interfaces::m_engine->get_local_player();
 }

@@ -237,6 +237,23 @@ public:
 	{
 		bool enabled;
 
+		int target_selection;
+
+		int auto_scope;
+		bool autofire;
+		bool norecoil;
+
+		bool hitchance;
+		float hitchance_amount;
+
+		int visible_minimal_damage;
+		bool visible_minimal_damage_hp;
+		int minimal_damage_override;
+		bool minimal_damage_override_pen;
+		bool penetration;
+		int penetration_minimal_damage;
+		bool penetration_minimal_damage_hp;
+
 		int prefered_hitbox;
 		bool prefer_safepoint;
 
@@ -247,6 +264,14 @@ public:
 		bool hitbox_arms;
 		bool hitbox_legs;
 		bool hitbox_feet;
+
+		int multipoint_head_scale;
+		int multipoint_stomach_scale;
+		bool multipoint_head;
+		bool multipoint_feet;
+		bool multipoint_stomach;
+		bool multipoint_chest;
+		bool multipoint_legs;
 
 		bool baim_prefer_always;
 		bool baim_prefer_lethal;

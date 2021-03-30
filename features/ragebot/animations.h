@@ -9,7 +9,7 @@ struct animation
 	void restore( c_cs_player* player );
 	void apply( c_cs_player* player );
 	void build_server_bones( c_cs_player* player );
-	float calculate_lerp();
+	float get_client_interp_amount();
 	bool is_valid(float m_sim_time, bool m_valid, const float range = 0.2f/*, float max_unlag */);
 	///bool is_valid_extended( );
 
@@ -78,6 +78,7 @@ private:
 	std::unordered_map<unsigned long, animation_info> animation_infos;
 
 public:
+	animation					m_anim;
 	anim_layer_t				m_ResolverLayers[ 3 ][ 15 ];
 	c_anim_state*				m_nState;
 	matrix3x4_t					fake_matrix[ 128 ];

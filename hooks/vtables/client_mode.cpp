@@ -11,9 +11,11 @@ bool __stdcall hooks::client_mode::create_move::fn(int sequence_number, c_user_c
 	globals::m_packet = true;
 
 	if (globals::m_local->is_alive() && interfaces::m_engine->is_connected()) {
+		
 		globals::backup::m_tick = cmd->m_tick_count;
 		globals::hvh::m_lag = interfaces::m_client_state->m_choked_commands;
-
+		globals::hvh::m_lerp = g_animations->m_anim.get_client_interp_amount();
+		globals::hvh::m_weapon_fire = tickbase->CanFireWeapon(TICKS_TO_TIME(globals::m_local->get_tick_base()));
 		globals::hvh::m_pressing_move = (cmd->m_buttons.has(IN_LEFT) || cmd->m_buttons.has(IN_FORWARD) || cmd->m_buttons.has(IN_BACK) ||
 			cmd->m_buttons.has(IN_RIGHT) || cmd->m_buttons.has(IN_MOVELEFT) || cmd->m_buttons.has(IN_MOVERIGHT) ||
 			cmd->m_buttons.has(IN_JUMP));

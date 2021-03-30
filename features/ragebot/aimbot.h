@@ -174,13 +174,6 @@ public:
 	bool CheckHitchance(c_cs_player* player, const qangle_t& angle, animation* record, int hitbox );
 	bool SelectTarget( animation* record, const vec3_t& aim, float damage );
 	void apply( );
-	void NoSpread( );
-
-	// knifebot.
-	void knife( );
-	bool CanKnife( animation* record, qangle_t angle, bool& stab );
-	bool KnifeTrace( vec3_t dir, bool stab, c_game_trace* trace );
-	bool KnifeIsBehind( animation* record );
 };
 
 extern Aimbot g_aimbot;

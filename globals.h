@@ -34,10 +34,12 @@ namespace globals {
 
 		extern int m_missed_shots;
 
+		extern bool m_weapon_fire;
 		extern bool m_pressing_move;
 		extern bool	m_negate_desync;
 
 		extern int  m_lag;
+		extern float m_lerp;
 
 		extern bool m_should_lag;
 		extern int	m_wanted_choke;

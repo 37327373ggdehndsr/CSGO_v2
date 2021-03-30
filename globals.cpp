@@ -17,10 +17,13 @@ namespace globals {
 
 		int m_missed_shots;
 
+		bool m_weapon_fire;
 		bool m_pressing_move;
 		bool m_negate_desync;
 
 		int  m_lag;
+		float m_lerp;
+
 		bool m_should_lag;
 		int	 m_wanted_choke;
 	}
