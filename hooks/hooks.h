@@ -96,7 +96,9 @@ namespace hooks {
 		namespace create_move {
 			constexpr auto index = 24u;
 			using T = bool(__stdcall*)(int, c_user_cmd*);
+			using AngleMatrix_t = void(__fastcall*)(const qangle_t&, matrix3x4_t&);
 			bool __stdcall fn(int sequence_number, c_user_cmd* cmd);
+			AngleMatrix_t		   m_angle_matrix;
 		}
 
 		namespace override_view {

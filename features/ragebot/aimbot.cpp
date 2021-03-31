@@ -2,7 +2,6 @@
 
 Aimbot g_aimbot{ };;
 
-
 void AimPlayer::OnNetUpdate( c_cs_player* player ) {
 	bool reset = ( !m_cfg.ragebot.enabled || !player->is_alive() || !player->is_enemy() );
 
@@ -147,7 +146,6 @@ void Aimbot::init( ) {
 	m_best_hp = 100 + 1;
 	m_best_lag = std::numeric_limits< float >::max( );
 	m_best_height = std::numeric_limits< float >::max( );
-	g_aimbot.m_current_matrix = nullptr;
 
 	if (!tickbase->m_shift_data.m_did_shift_before && !tickbase->m_shift_data.m_should_be_ready)
 		m_shoot_next_tick = false;
@@ -171,7 +169,7 @@ void Aimbot::think( ) {
 		return;
 
 	// no grenades or bomb.
-	if(globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_TYPE_GRENADE || globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_TYPE_C4)
+	if(globals::m_local->get_active_weapon()->get_cs_weapon_data()->m_weapon_type == WEAPON_TYPE_GRENADE || globals::m_local->get_active_weapon()->get_cs_weapon_data()->m_weapon_type == WEAPON_TYPE_C4)
 		return;
 
 	// we have no aimbot enabled.
@@ -183,10 +181,10 @@ void Aimbot::think( ) {
 
 	// animation silent aim, prevent the ticks with the shot in it to become the tick that gets processed.
 	// we can do this by always choking the tick before we are able to shoot.
-	bool revolver = globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_R8_REVOLVER && g_cl.m_revolver_cock != 0;
+	bool revolver = globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_R8_REVOLVER && globals::m_revolver_cock != 0;
 
 	// one tick before being able to shoot.
-	if( revolver && g_cl.m_revolver_cock > 0 && g_cl.m_revolver_cock == g_cl.m_revolver_query ) {
+	if( revolver && globals::m_revolver_cock > 0 && globals::m_revolver_cock == globals::m_revolver_query ) {
 		//globas::m_packet = false;
 		return;
 	}
@@ -207,7 +205,7 @@ void Aimbot::think( ) {
 	for (int i{ 1 }; i <= interfaces::m_global_vars->m_max_clients; ++i) {
 		c_cs_player* player = static_cast<c_cs_player*>(interfaces::m_entity_list->get_client_entity(i));
 
-		if( !player || player == g_cl.m_local )
+		if( !player || player == globals::	m_local )
 			continue;
 
 		if( !IsValidTarget( player ) )
@@ -308,9 +306,7 @@ void Aimbot::find() {
 		m_record = best.record;
 		m_hitbox = best.hitbox;
 
-		m_current_matrix = best.record->m_pMatrix_Resolved;
-
-		if (!m_target || m_target->is_dormant() || m_record->dormant || !m_current_matrix || !m_damage || !(m_damage >= best.min_damage || (m_damage <= best.min_damage && m_damage >= m_target->get_health())))
+		if (!m_target || m_target->is_dormant() || m_record->dormant || !m_damage || !(m_damage >= best.min_damage || (m_damage <= best.min_damage && m_damage >= m_target->get_health())))
 			return;
 
 		//g_inputpred.Predict();
@@ -356,10 +352,6 @@ void Aimbot::find() {
 }
 
 bool Aimbot::CheckHitchance(c_cs_player* player, const qangle_t& angle, animation* record, int hitbox ) {
-	//note - nico; you might wonder why I changed HITCHANCE_MAX:
-	//I made it require more seeds (while not double tapping) to hit because it ensures better accuracy
-	//while double tapping/using double tap it requires less seeds now, so we might shoot the 2nd shot more often <.<
-
 	if (!globals::m_local->get_active_weapon()) return false;
 
 	float HITCHANCE_MAX = 82.f;
@@ -387,7 +379,7 @@ bool Aimbot::CheckHitchance(c_cs_player* player, const qangle_t& angle, animatio
 	// iterate all possible seeds.
 	for( int i{ }; i <= SEED_MAX; ++i ) {
 		// get spread.
-		wep_spread = globals::m_local->get_active_weapon()->CalculateSpread( i, inaccuracy, spread );
+		wep_spread = globals::m_local->get_active_weapon()->calculate_spread( i, inaccuracy, spread );
 
 		// get spread direction.
 		dir = ( fwd + ( right * wep_spread.x ) + ( up * wep_spread.y ) ).normalized( );
@@ -423,7 +415,7 @@ bool AimPlayer::SetupHitboxPoints( animation* record, matrix3x4_t* bones, int in
 	if( !hdr )
 		return false;
 
-	mstudiohitboxset_t* set = hdr->get_hitbox_set(record->player->m_nHitboxSet( ) );
+	mstudiohitboxset_t* set = hdr->get_hitbox_set(record->player->get_hitbox_set( ) );
 	if( !set )
 		return false;
 
@@ -444,7 +436,7 @@ bool AimPlayer::SetupHitboxPoints( animation* record, matrix3x4_t* bones, int in
 	if( bbox->m_radius <= 0.f ) {
 		// convert rotation angle to a matrix.
 		matrix3x4_t rot_matrix;
-		g_csgo.AngleMatrix( bbox->m_angle, rot_matrix );
+		hooks::client_mode::create_move::m_angle_matrix( bbox->m_angle, rot_matrix );
 
 		// apply the rotation to the entity input space (local).
 		matrix3x4_t matrix;
@@ -613,11 +605,6 @@ bool AimPlayer::GetBestAimPosition( vec3_t& aim, float& damage, int& hitbox, ani
 	// get player hp.
 	int hp = std::min( 100, record->player->get_health( ) );
 
-	m_matrix = record->m_pMatrix_Resolved;
-
-	if( !m_matrix )
-		return false;
-
 	if(globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_ZEUS_X27) {
 		dmg = pendmg = hp;
 		pen = true;
@@ -648,7 +635,7 @@ bool AimPlayer::GetBestAimPosition( vec3_t& aim, float& damage, int& hitbox, ani
 		done = false;
 
 		// setup points on hitbox.
-		if (!SetupHitboxPoints(record, m_matrix, it.m_index, points)) {
+		if (!SetupHitboxPoints(record, record->bones, it.m_index, points)) {
 			continue;
 		}
 
@@ -675,14 +662,6 @@ bool AimPlayer::GetBestAimPosition( vec3_t& aim, float& damage, int& hitbox, ani
 			// we only want safe pointable (nice word) hitboxes when forcing..
 			if (!is_safepoint && g_aimbot.m_force_safepoint)
 				continue;
-
-			//// setup trace data
-			//record->player->m_vecOrigin() = record->m_vecOrigin;
-			//record->player->SetAbsOrigin(record->m_vecOrigin);
-			//record->player->SetAbsAngles(record->m_angAbsAngles);
-			//record->player->m_vecMins() = record->m_vecMins;
-			//record->player->m_vecMaxs() = record->m_vecMaxs;
-			//record->player->m_BoneCache2() = reinterpret_cast<matrix3x4_t**>(m_matrix);
 
 			// we can hit p!
 			if( penetration::run( &in, &out ) ) {
@@ -736,10 +715,6 @@ bool AimPlayer::GetBestAimPosition( vec3_t& aim, float& damage, int& hitbox, ani
 					break;
 				}
 			}
-			else {
-
-
-			}
 		}
 
 		// ghetto break out of outer loop.
@@ -753,8 +728,6 @@ bool AimPlayer::GetBestAimPosition( vec3_t& aim, float& damage, int& hitbox, ani
 		aim = scan.m_pos;
 		damage = scan.m_damage;
 		hitbox = scan.m_hitbox;
-
-		g_aimbot.m_current_matrix = m_matrix;
 
 		return true;
 	}

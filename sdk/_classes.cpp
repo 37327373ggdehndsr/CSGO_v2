@@ -40,7 +40,6 @@ c_base_combat_weapon* c_base_combat_character::get_active_weapon() {
 	return reinterpret_cast<c_base_combat_weapon*>(handle.get());
 }
 
-
 bool c_base_combat_weapon::is_reload() {
 	static auto inReload = *(uint32_t*)(SIG("client.dll", "C6 87 ? ? ? ? ? 8B 06 8B CE FF 90") + 2);
 	return *(bool*)((uintptr_t)this + inReload);

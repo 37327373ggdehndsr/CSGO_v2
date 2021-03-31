@@ -1,4 +1,6 @@
 #pragma once
+#include "../../globals.h"
+#include "../../hooks/hooks.h"
 
 class Sphere;
 

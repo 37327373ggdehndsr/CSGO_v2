@@ -33,7 +33,7 @@ namespace globals {
 		extern int m_goal_shift;
 
 		extern int m_missed_shots;
-
+		extern bool m_player_fire;
 		extern bool m_weapon_fire;
 		extern bool m_pressing_move;
 		extern bool	m_negate_desync;
@@ -47,7 +47,7 @@ namespace globals {
 
 	extern HMODULE					m_module;
 	extern c_local_player			m_local;
-	extern c_user_cmd* m_cmd;
+	extern c_user_cmd*				m_cmd;
 	extern qangle_t				    m_rotation;
 	extern std::deque< NetPos >		m_net_pos;
 
@@ -63,7 +63,15 @@ namespace globals {
 	extern bool						m_call_bone;
 	extern bool						m_call_client_update_enemy;
 	extern bool						m_force_bone;
+
+	extern bool						m_revolver_fire;
+	extern int						m_revolver_cock;
+	extern int						m_revolver_query;
 	extern int		                m_shot_command_number;
 
 	extern e_client_frame_stage		m_cur_stage;
+	
+	extern std::vector<std::pair<float, float>> m_computed_seeds;
+
+	extern void build_seed_table();
 }

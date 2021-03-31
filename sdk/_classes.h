@@ -384,7 +384,8 @@ public:
 	NETVAR(get_velocity_modifier(), float, "CCSPlayer->m_flVelocityModifier")
 	NETVAR(has_defuser(), bool, "CCSPlayer->m_bHasDefuser")
 	NETVAR(has_helmet(), bool, "CCSPlayer->m_bHasHelmet")
-	NETVAR(get_animtime(), float, "CBaseEntity->m_flAnimTime", ); //DT_CSPlayer
+	NETVAR(get_animtime(), float, "CBaseEntity->m_flAnimTime", ) //DT_CSPlayer
+	NETVAR(get_hitbox_set(), int, "CBaseAnimating->m_nHitboxSet", ) //DT_BaseAnimating
 
 //	offs_bone_mask = netvar_sys::get().GetOffset("DT_BaseAnimating", "m_nForceBone") + 0x20;
 
@@ -455,7 +456,7 @@ public:
 	__forceinline void create_animation_state(c_anim_state* state)
 	{
 		using CreateAnimState_t = void(__thiscall*)(c_anim_state*, c_cs_player*);
-		static auto CreateAnimState = SIG("client.dll", "55 8B EC 56 8B F1 B9 ? ? ? ? C7 46").cast<void(__thiscall*)(c_anim_state*, c_cs_player*)>();;
+		static auto CreateAnimState = SIG("client.dll", "55 8B EC 56 8B F1 B9 ? ? ? ? C7 46").cast<void(__thiscall*)(c_anim_state*, c_cs_player*)>();
 		if (!CreateAnimState)
 			return;
 
@@ -479,7 +480,6 @@ public:
 
 	NETVAR(get_pin_pulled(), bool, "CBaseCSGrenade->m_bPinPulled")
 	NETVAR(get_throw_time(), float, "CBaseCSGrenade->m_fThrowTime")
-
 	NETVAR(get_post_pone_fire_ready_time(), float, "CWeaponCSBase->m_flPostponeFireReadyTime")
 	NETVAR(get_accuracy_penalty(), float, "CWeaponCSBase->m_fAccuracyPenalty")
 	NETVAR(get_recoil_index(), float, "CWeaponCSBase->m_flRecoilIndex")
@@ -490,6 +490,8 @@ public:
 	NETVAR(get_next_primary_attack(), float, "CBaseCombatWeapon->m_flNextPrimaryAttack")
 	NETVAR(get_next_secondary_attack(), float, "CBaseCombatWeapon->m_flNextSecondaryAttack")
 	NETVAR(get_world_model(), c_base_handle, "CBaseCombatWeapon->m_hWeaponWorldModel")
+	NETVAR(get_burst_shots_remaining(), int, "CWeaponCSBaseGun->m_iBurstShotsRemaining") //CWeaponCSBaseGun
+	NETVAR(get_next_burst_shot(), float , "CWeaponCSBaseGun->m_fNextBurstShot") //CWeaponCSBaseGun
 
 	std::wstring get_name();
 	bool is_reload();
@@ -502,6 +504,70 @@ public:
 			|| (extra_check && (get_item_definition_index() == 39 || get_item_definition_index() == 8));
 	}
 	c_cs_weapon_data* get_cs_weapon_data();
+	
+
+
+	__forceinline vec3_t calculate_spread(int seed, float inaccuracy, float spread, bool revolver2 = false) {
+		c_cs_weapon_data*		   wep_info;
+		int						   item_def_index;
+		float					   recoil_index, r1, r2, r3, r4, s1, c1, s2, c2;
+		using GetShotgunSpread_t = void(__stdcall*)(int, int, int, float*, float*);
+		GetShotgunSpread_t		   get_shotgun_spread;
+
+		get_shotgun_spread = SIG("client.dll", "E8 ? ? ? ? EB 38 83 EC 08").rel32<GetShotgunSpread_t>(1);
+
+		// if we have no bullets, we have no spread.
+		wep_info = get_cs_weapon_data();
+		if (!wep_info || !wep_info->m_bullets)
+			return { };
+
+		// get some data for later.
+		item_def_index = get_item_definition_index();
+		recoil_index =	 get_recoil_index();
+
+		// generate needed floats.
+		r1 = std::get<0>(globals::m_computed_seeds[seed]);
+		r2 = std::get<1>(globals::m_computed_seeds[seed]);
+
+		static auto weapon_accuracy_shotgun_spread_patterns = interfaces::m_cvar_system->find_var(FNV1A("weapon_accuracy_shotgun_spread_patterns"));
+		if (weapon_accuracy_shotgun_spread_patterns->get_int() > 0)
+			get_shotgun_spread(item_def_index, 0, 0 + wep_info->m_bullets * recoil_index, &r4, &r3);
+
+		else {
+			r3 = std::get<0>(globals::m_computed_seeds[seed]);
+			r4 = std::get<1>(globals::m_computed_seeds[seed]);
+		}
+
+		// revolver secondary spread.
+		if (item_def_index == WEAPON_R8_REVOLVER && revolver2) {
+			r1 = 1.f - (r1 * r1);
+			r3 = 1.f - (r3 * r3);
+		}
+
+		// negev spread.
+		else if (item_def_index == WEAPON_NEGEV && recoil_index < 3.f) {
+			for (int i{ 3 }; i > recoil_index; --i) {
+				r1 *= r1;
+				r3 *= r3;
+			}
+
+			r1 = 1.f - r1;
+			r3 = 1.f - r3;
+		}
+
+		// get needed sine / cosine values.
+		c1 = std::cos(r2);
+		c2 = std::cos(r4);
+		s1 = std::sin(r2);
+		s2 = std::sin(r4);
+
+		// calculate spread vector.
+		return {
+			(c1 * (r1 * inaccuracy)) + (c2 * (r3 * spread)),
+			(s1 * (r1 * inaccuracy)) + (s2 * (r3 * spread)),
+			0.f
+		};
+	}
 };
 
 class c_local_player {

@@ -20,6 +20,60 @@ bool tick_base_system::IsFiring( float curtime ){
 	return globals::m_cmd->m_buttons.has( IN_ATTACK ) && CanFireWeapon(curtime );
 }
 
+
+bool tick_base_system::CanFireWeapon(float curtime) {
+	// the player cant fire.
+	if (!globals::hvh::m_player_fire || !globals::m_local->get_active_weapon())
+		return false;
+
+	if (globals::m_local->get_active_weapon()->get_cs_weapon_data()->m_weapon_type == WEAPON_TYPE_GRENADE)
+		return false;
+
+	// if we have no bullets, we cant shoot.
+	if (globals::m_local->get_active_weapon()->get_cs_weapon_data()->m_weapon_type != WEAPON_TYPE_KNIFE && globals::m_local->get_active_weapon()->get_ammo() < 1)
+		return false;
+
+	// do we have any burst shots to handle?
+	if ((globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_GLOCK18 || globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_FAMAS) && globals::m_local->get_active_weapon()->get_burst_shots_remaining() > 0) {
+		// new burst shot is coming out.
+		if (curtime >= globals::m_local->get_active_weapon()->get_next_burst_shot())
+			return true;
+	}
+
+	// r8 revolver.
+	if (globals::m_local->get_active_weapon()->get_item_definition_index() ==WEAPON_R8_REVOLVER) {
+		// mouse1.
+		if (globals::m_revolver_fire) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	// yeez we have a normal gun.
+	if (curtime >= globals::m_local->get_active_weapon()->get_next_primary_attack())
+		return true;
+
+	return false;
+}
+
+bool tick_base_system::IsFiring(float curtime) {
+	const auto weapon = globals::m_local->get_active_weapon();
+	if (!weapon)
+		return false;
+
+	const auto IsZeus = globals::m_local->get_active_weapon()->get_item_definition_index() == WEAPON_ZEUS_X27;
+	const auto IsKnife = !IsZeus && globals::m_local->get_active_weapon()->get_cs_weapon_data()->m_weapon_type == WEAPON_TYPE_KNIFE;
+
+	if (globals::m_local->get_active_weapon()->get_cs_weapon_data()->m_weapon_type == WEAPON_TYPE_GRENADE)
+		return !weapon->get_pin_pulled() && weapon->get_throw_time() > 0.f && weapon->get_throw_time() < curtime;
+	else if (IsKnife)
+		return (globals::m_cmd->m_buttons.has(IN_ATTACK) || globals::m_cmd->m_buttons.has(IN_ATTACK2)) && CanFireWeapon(curtime);
+	else
+		return globals::m_cmd->m_buttons.has(IN_ATTACK) && CanFireWeapon(curtime);
+}
+
 void tick_base_system::WriteUserCmd( c_bf_write* buf, c_user_cmd* incmd, c_user_cmd* outcmd ){
 	using WriteUsercmd_t = void( __fastcall* )( void*, c_user_cmd*, c_user_cmd* );
 	static WriteUsercmd_t fnWriteUserCmd = SIG( "client.dll", "55 8B EC 83 E4 F8 51 53 56 8B D9 8B 0D" ).cast<WriteUsercmd_t>( );

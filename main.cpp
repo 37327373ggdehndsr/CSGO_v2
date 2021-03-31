@@ -30,6 +30,8 @@ unsigned long __stdcall init(LPVOID module) {
 
 	netvars::init();
 
+	globals::build_seed_table();
+
 	master->setup_config();
 	master->config_files();
 
